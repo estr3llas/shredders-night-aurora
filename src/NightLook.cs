@@ -5,10 +5,12 @@ using Lirp = Il2CppLirp;
 namespace ShreddersNightAurora
 {
     /// <summary>
-    /// The game's stock night (sun below the horizon) is lit almost entirely by flat blue sky ambient, both on
-    /// surfaces and in the Tropos fog/haze. The moon is very dim and casts no shadows, so everything looks
-    /// self-lit. While always-night is on, this dims the surface ambient and the fog's ambient in-scattering,
-    /// brightens the moon and gives it soft shadows. Originals are cached per level and put back on toggle-off.
+    /// The game's stock night (sun below the horizon) is lit almost entirely by flat blue sky ambient, and the
+    /// Tropos volumetric fog lays a milky, glowing veil over everything, near objects included (the "foam" on snow,
+    /// rails and board). Found by A/B on a frozen frame: turning TroposCamera.renderFog off removes the veil, while
+    /// clouds, reflections, post-processing and snow shading were not the cause. While always-night is on this
+    /// turns the volumetric fog off (clear arctic night; distance haze/aerial perspective stays), dims the surface
+    /// ambient and haze, brightens the moon and gives it soft shadows. Originals are restored on toggle-off.
     /// </summary>
     internal static class NightLook
     {
@@ -16,6 +18,8 @@ namespace ShreddersNightAurora
         static float troposAmbient, envAmbient, moonIntensity, fogAmbient, hazeColor;
         static LightShadows moonShadows;
         static bool active;
+        static TroposCamera fogCamera;    // camera whose renderFog we switched off
+        static bool fogCameraOriginal;
 
         static float AmbientScale => Mathf.Clamp(Mod.NightAmbient.Value, 0f, 1f);
         static float HazeScale => Mathf.Clamp(Mod.NightHaze.Value, 0f, 1f);
@@ -41,6 +45,7 @@ namespace ShreddersNightAurora
 
             Set(tropos, env, troposAmbient * AmbientScale, envAmbient * AmbientScale, fogAmbient * HazeScale,
                 hazeColor * HazeScale, moonIntensity * MoonScale, LightShadows.Soft);
+            SetFog(Mod.NightFog.Value);
             active = true;
         }
 
@@ -48,10 +53,32 @@ namespace ShreddersNightAurora
         {
             if (!active) return;
             active = false;
+            RestoreFog();
             var env = Lirp.EnvironmentManager.instance;
             var tropos = TroposEnvironment.instance;
             if (env == null || env != cachedFor || env.lighting == null || tropos == null || tropos.m_Lighting == null) return;
             Set(tropos, env, troposAmbient, envAmbient, fogAmbient, hazeColor, moonIntensity, moonShadows);
+        }
+
+        static void SetFog(bool on)
+        {
+            var cam = Camera.main;
+            var tc = cam != null ? cam.GetComponent<TroposCamera>() : null;
+            if (tc == null) return;
+            if (tc != fogCamera)
+            {
+                RestoreFog();
+                fogCamera = tc;
+                fogCameraOriginal = tc.renderFog;
+            }
+            bool want = on && fogCameraOriginal;
+            if (tc.renderFog != want) tc.renderFog = want;
+        }
+
+        static void RestoreFog()
+        {
+            if (fogCamera != null && fogCamera.renderFog != fogCameraOriginal) fogCamera.renderFog = fogCameraOriginal;
+            fogCamera = null;
         }
 
         static void Set(TroposEnvironment tropos, Lirp.EnvironmentManager env, float tAmbient, float eAmbient,

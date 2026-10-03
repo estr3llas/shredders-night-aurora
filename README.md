@@ -18,10 +18,18 @@ Both settings persist between sessions.
     rewrite the requested altitude to below the horizon.
   - A postfix on `Apply` re-asserts it.
   - A once-a-second guard catches anything else.
-  - **Night look.** The game's stock night is lit almost entirely by flat blue sky ambient, so snow, clothes and
-    boards look self-lit and "glowy". While always-night is on, the mod dims the Tropos surface ambient and the
-    fog/haze ambient scattering, doubles the moonlight and turns on soft moon shadows. Turning night off restores
-    the originals.
+  - **Night look.** The game's stock night looks like a light "foam" over everything: snow, mountains, rails and
+    the board.
+    - **Cause:** I found it by switching each effect off one at a time on a frozen frame. The culprit is the
+      Tropos volumetric fog (`TroposCamera.renderFog`), which renders as a milky, glowing veil at night.
+      Reflections, bloom/post-processing, clouds and snow shading were not it. The rest is flat blue sky ambient.
+    - **Fix:** while always-night is on, the mod switches off the volumetric fog for a clear arctic night and keeps
+      the distance haze for depth. It also dims the sky ambient and haze, doubles the moonlight and gives the moon
+      soft shadows.
+    - This follows the usual "Hollywood darkness" practice (see the
+      [Level Design Book](https://book.leveldesignbook.com/process/lighting/darkness)): readable brightness, with
+      night carried by contrast, directional moonlight and shadows that reach real black instead of flat ambient.
+    - Turning night off restores everything, fog included.
   - The mod never forces anything every frame.
   - Levels that ship native time presets (`Lirp.Scene.TimePresets`) also get their own night preset loaded.
 - **Aurora.** Three procedurally generated curtain ribbons sit on a sky sphere centred on the camera, just inside
@@ -55,6 +63,7 @@ Both settings persist between sessions.
 | `NightAmbient` | `0.3` | Multiplier on sky ambient on surfaces at night. `1` is the game's stock look, which is flat and glowy. |
 | `NightHaze` | `0.3` | Multiplier on how much sky light the fog and haze scatter at night. `1` is the stock blue glow. |
 | `MoonBrightness` | `2` | Multiplier on the moonlight. The moon also casts soft shadows while night is forced. |
+| `NightFog` | `false` | Keep the game's volumetric fog at night. At night it renders as a milky glowing veil. |
 | `AuroraEnabled` | `true` | Draw the aurora. |
 | `AuroraIntensity` | `1.0` | `0`–`3`. |
 | `AuroraAzimuth` | `0` | World heading of the aurora's centre, in degrees. |

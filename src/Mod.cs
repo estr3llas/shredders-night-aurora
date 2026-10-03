@@ -16,6 +16,7 @@ namespace ShreddersNightAurora
         internal static MelonPreferences_Entry<float> NightAmbient;
         internal static MelonPreferences_Entry<float> MoonBrightness;
         internal static MelonPreferences_Entry<float> NightHaze;
+        internal static MelonPreferences_Entry<bool> NightFog;
         internal static MelonPreferences_Entry<bool> AuroraEnabled;
         internal static MelonPreferences_Entry<float> AuroraIntensity;
         internal static MelonPreferences_Entry<float> AuroraAzimuth;
@@ -42,6 +43,8 @@ namespace ShreddersNightAurora
                 "Multiplier on the moonlight at night. The moon also casts soft shadows while always-night is on.");
             NightHaze = category.CreateEntry("NightHaze", 0.3f, "Night haze glow",
                 "Multiplier on how much sky light the fog and haze scatter at night (1 = stock blue glow).");
+            NightFog = category.CreateEntry("NightFog", false, "Volumetric fog at night",
+                "The game's volumetric fog renders as a milky glowing veil at night; off = clear night.");
             AuroraEnabled = category.CreateEntry("AuroraEnabled", true, "Aurora borealis",
                 "Draw an aurora in the sky. It fades out automatically while the sun is up.");
             AuroraIntensity = category.CreateEntry("AuroraIntensity", 1f, "Aurora intensity", "0 = invisible, 1 = default, 2 = very bright.");

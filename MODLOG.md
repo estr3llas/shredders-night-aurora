@@ -56,3 +56,15 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
   Scripted riding with a held W crashes the rider out of bounds, so it's no good for multi-zone tours.
 - Cleanup: the game's registry screen settings were restored from backup, Loader.cfg hide_console was set back to
   false, and the test MelonPreferences.cfg was removed.
+- 18:25 User: "everything still glows af, like a light foam on top of snow, mountains, rails, board". I built an A/B
+  harness (temporary): freeze with timeScale 0, then step one experiment per key.
+  - Round 1: reflections off, post-process off, TroposCamera off, ambient 0, snow subsurface/glitter 0, moon 0.
+    Only TroposCamera off removed the veil.
+  - Round 2: TroposCamera flags. `renderFog=false` removes the milky veil. `renderAerialPerspective` makes little
+    difference, and so does `renderClouds`. Scaling `fogVolume.density` and `haze.density` x0.3 gave a hard black
+    band at the horizon, so don't do that.
+  - Fix: while night is forced, `TroposCamera.renderFog = false` on Camera.main ('VRCamera'), remembered per
+    camera and restored on toggle-off. New pref `NightFog` (default false).
+  - Verified: crisp moonlit mountains, F7 brings day back with its fog, F7 again gives night, F8 works.
+- Research: Level Design Book, "Lighting for darkness" (Hollywood darkness: contrast and directional moonlight
+  rather than flat ambient), and Jensen et al., "Night Rendering" (2000).
