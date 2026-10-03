@@ -91,3 +91,23 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
   - Defaults now: NightBrightness +0.4 EV (ColorGrading.postExposure offset), NightAmbient 0.5,
     MoonShadowStrength 0.6, MoonElevation 45 (keeps the heading). All cached and restored on toggle-off.
     Toggling F7 off and on three times gives identical frame luminance (29.4 / 29.3 / 29.4).
+- 19:30 User: make the aurora more beautiful (research it).
+  - Research: NPS "The Colors of the Aurora" (Lummerzheim) for the structure:
+    - green 557.7 nm O emission with a sharp lower border at about 100 km;
+    - a purple N2 lower fringe in intense displays;
+    - diffuse ray-less red 630 nm above 200 km, plus a blue top on sunlit ions;
+    - rays, folds and parallel curtains.
+  - Also: Lawlor & Genetti 2011 (volume aurora, vertical deposition profile); Gaia Sky's aurora write-up (a flat
+    mesh only works with good textures and multiple layers); the shaders.com Aurora parameter set (base, core and
+    tip colours, curtain count, waviness, ray density).
+  - Rebuilt Aurora.cs:
+    - 1024x512 curtain texture: rays with per-ray tops, sharp border, purple fringe, diffuse red band, blue tip;
+      rgb normalised with intensity in alpha for the additive shader;
+    - a separate soft glow texture/layer under each curtain (bloom is off at night);
+    - folding paths (fold amplitude x 2π x count > span), kinks, surges, finer shimmer;
+    - 320 segments, 6 meshes.
+  - The first capture showed the curtains hidden behind ridges: the riding camera looks down, so the visible sky
+    band is about 0-20° and the mountains reach about 10°. Raised the lower borders to 9° and 17°.
+  - Verified at spawn: tall green rays, purple fringe and red tops are visible across headings, and the animation
+    runs.
+  - A recorded clip was unusable because the rider drifted into a building; it was discarded.

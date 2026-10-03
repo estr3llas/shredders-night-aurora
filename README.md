@@ -45,16 +45,29 @@ Both settings persist between sessions.
     direction.
   - The mod never forces anything every frame.
   - Levels that ship native time presets (`Lirp.Scene.TimePresets`) also get their own night preset loaded.
-- **Aurora.** Two curtain rings go all the way round the horizon, and a third arc passes high overhead, so there's
-  aurora whichever way you ride.
-  - Bright and faint patches drift slowly around the sky.
-  - It sits on a sky sphere centred on the camera, just inside the far plane, so terrain still occludes it.
-  - Each curtain is textured with a generated, tileable "rays" texture: green at the base, teal in the middle,
-    violet at the top.
-  - It's drawn with a transparent shader the game already ships (`Legacy Shaders/Particles/Additive`), so there's
-    no AssetBundle and no Unity Editor dependency.
-  - The curtains sway and shimmer through vertex updates written into persistent native arrays, so nothing is
-    allocated per frame.
+- **Aurora.** The look follows how real aurora appears. Sources: NPS,
+  [The Colors of the Aurora](https://www.nps.gov/articles/-articles-aps-v8-i1-c9.htm) by Lummerzheim, and the
+  Lawlor & Genetti aurora renderer.
+  - **Rays:** curtains of thin vertical rays, each reaching its own height.
+  - **Lower border:** green oxygen light starts abruptly at about 100 km, so the bottom edge is sharp, with the
+    thin purple nitrogen fringe that intense displays show beneath it.
+  - **Top:** the green fades upward into a faint, diffuse red, because high-altitude oxygen light has no ray
+    structure. The very top carries a hint of blue.
+  - **Shape and motion:**
+    - large folds where the curtain doubles back on itself;
+    - a second, parallel curtain and an arc high overhead;
+    - rays slide sideways;
+    - brightness surges run along the curtain;
+    - bright and faint patches drift around the sky;
+    - a soft glow layer stands in for bloom, which the night grade turns off.
+  - **Coverage:** two curtains go all the way round the horizon, with their lower edges above typical ridgelines,
+    so there's aurora whichever way you ride.
+  - **Rendering:**
+    - It sits on a sky sphere centred on the camera, just inside the far plane, so terrain still occludes it.
+    - It's drawn with a transparent shader the game already ships (`Legacy Shaders/Particles/Additive`), so there's
+      no AssetBundle and no Unity Editor dependency.
+    - The textures (1024×512 curtain, soft glow) are generated at startup.
+    - Vertices are rewritten each frame into persistent native arrays, so nothing is allocated per frame.
   - All of the art is generated at runtime by this mod. No game assets are copied or shipped.
 
 ## Install
