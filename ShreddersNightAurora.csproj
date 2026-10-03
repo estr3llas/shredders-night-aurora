@@ -27,6 +27,7 @@
     <Reference Include="$(MLDir)\Il2CppAssemblies\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="$(MLDir)\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="$(MLDir)\Il2CppAssemblies\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(MLDir)\Il2CppAssemblies\Unity.Postprocessing.Runtime.dll" Private="false" />
   </ItemGroup>
 
   <!-- dotnet build -p:Deploy=true copies the DLL into the game's Mods folder. -->

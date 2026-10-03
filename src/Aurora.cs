@@ -24,7 +24,8 @@ namespace ShreddersNightAurora
             public Il2CppStructArray<Color32> Colors;
         }
 
-        const int Segments = 160;
+        const int Segments = 256;
+        const float TwoPi = Mathf.PI * 2f;
         const int TexWidth = 512, TexHeight = 256;
         const float Deg = Mathf.PI / 180f;
 
@@ -106,11 +107,14 @@ namespace ShreddersNightAurora
             Object.DontDestroyOnLoad(root);
             root.hideFlags = HideFlags.DontSave;
 
+            // Two rings that go all the way round the horizon plus an arc crossing high overhead, so there is
+            // aurora whichever way the rider faces. Slowly drifting "activity" patches keep the rings from looking
+            // uniform. URepeat must be an integer on rings so the texture wraps seamlessly.
             layers = new[]
             {
-                new Layer { Azimuth = 0f,   Span = 210f, Elevation = 6f,  Height = 30f, Sway = 10f, Lean = 4f,  URepeat = 4f, Scroll = 0.010f,  Alpha = 1.00f, Phase = 0.0f },
-                new Layer { Azimuth = -45f, Span = 150f, Elevation = 11f, Height = 32f, Sway = 8f,  Lean = -3f, URepeat = 3f, Scroll = -0.007f, Alpha = 0.65f, Phase = 2.1f },
-                new Layer { Azimuth = 60f,  Span = 130f, Elevation = 17f, Height = 26f, Sway = 6f,  Lean = 5f,  URepeat = 2f, Scroll = 0.005f,  Alpha = 0.45f, Phase = 4.4f },
+                new Layer { Azimuth = 0f,  Span = 360f, Elevation = 7f,  Height = 28f, Sway = 6f,  Lean = 4f,  URepeat = 8f, Scroll = 0.004f,  Alpha = 1.00f, Phase = 0.0f },
+                new Layer { Azimuth = 0f,  Span = 360f, Elevation = 15f, Height = 30f, Sway = 8f,  Lean = -3f, URepeat = 6f, Scroll = -0.003f, Alpha = 0.55f, Phase = 2.1f },
+                new Layer { Azimuth = 90f, Span = 180f, Elevation = 42f, Height = 26f, Sway = 10f, Lean = 5f,  URepeat = 3f, Scroll = 0.006f,  Alpha = 0.60f, Phase = 4.4f },
             };
             for (int i = 0; i < layers.Length; i++) BuildLayer(layers[i], shader, i);
             return true;
@@ -168,19 +172,23 @@ namespace ShreddersNightAurora
             for (int s = 0; s <= Segments; s++)
             {
                 float x = (float)s / Segments;
-                float edge = Mathf.SmoothStep(0f, 1f, Mathf.Min(x, 1f - x) * 6f);
-                float sway = layer.Sway * (Mathf.Sin(x * 7.1f + time * 0.11f + layer.Phase)
-                                           + 0.45f * Mathf.Sin(x * 17.3f - time * 0.23f + layer.Phase * 1.7f));
+                float p = TwoPi * x;   // every term below is periodic in x, so rings close without a seam
+                float edge = layer.Span >= 360f ? 1f : Mathf.SmoothStep(0f, 1f, Mathf.Min(x, 1f - x) * 6f);
+                float sway = layer.Sway * (Mathf.Sin(p * 3f + time * 0.11f + layer.Phase)
+                                           + 0.45f * Mathf.Sin(p * 7f - time * 0.23f + layer.Phase * 1.7f));
                 float az = (layer.Azimuth + (x - 0.5f) * layer.Span + sway) * Deg;
-                float lowEl = (layer.Elevation + 2.5f * Mathf.Sin(x * 11f + time * 0.07f + layer.Phase)) * Deg;
-                float highEl = lowEl + layer.Height * (0.8f + 0.2f * Mathf.Sin(x * 5f - time * 0.05f)) * Deg;
+                float lowEl = (layer.Elevation + 2.5f * Mathf.Sin(p * 5f + time * 0.07f + layer.Phase)) * Deg;
+                float highEl = lowEl + layer.Height * (0.8f + 0.2f * Mathf.Sin(p * 2f - time * 0.05f)) * Deg;
                 float highAz = az + layer.Lean * Deg;
                 vertices[s * 2] = Direction(az, lowEl);
                 vertices[s * 2 + 1] = Direction(highAz, highEl);
 
-                float shimmer = 0.55f + 0.25f * Mathf.Sin(x * 23f + time * 0.9f + layer.Phase)
-                                      + 0.2f * Mathf.Sin(x * 51f - time * 1.7f);
-                byte a = (byte)(Mathf.Clamp01(strength * edge * shimmer * (additive ? 1f : 0.8f)) * 255f);
+                // Slow-moving bright and faint patches (aurora "activity") plus a faster shimmer.
+                float activity = 0.3f + 0.7f * Mathf.Clamp01(0.55f + 0.45f * Mathf.Sin(p + time * 0.03f + layer.Phase)
+                                                              + 0.3f * Mathf.Sin(p * 2f - time * 0.045f + layer.Phase * 0.6f));
+                float shimmer = 0.55f + 0.25f * Mathf.Sin(p * 9f + time * 0.9f + layer.Phase)
+                                      + 0.2f * Mathf.Sin(p * 20f - time * 1.7f);
+                byte a = (byte)(Mathf.Clamp01(strength * edge * activity * shimmer * (additive ? 1f : 0.8f)) * 255f);
                 var c = new Color32(255, 255, 255, a);
                 colors[s * 2] = c;
                 colors[s * 2 + 1] = c;

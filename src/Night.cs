@@ -69,7 +69,7 @@ namespace ShreddersNightAurora
             nextTry = now + GuardInterval;
             if (!Active) return;
             var env = EnvironmentManager.instance;
-            if (env == null) { applied = false; pending = true; return; }   // level unloaded
+            if (env == null) { applied = false; pending = true; NightGrade.Forget(); return; }   // level unloaded
             // Safety net for anything that moves the sun without going through a patched setter.
             if (env.automaticSunPosition || env.GetSunAltitude() > NightAltitude + 0.5f)
             {

@@ -19,26 +19,32 @@ Both settings persist between sessions.
   - A postfix on `Apply` re-asserts it.
   - A once-a-second guard catches anything else.
   - **Night look.** The game's stock night looks like a light "foam" over everything: snow, mountains, rails and
-    the board.
-    - **Cause:** I found it by switching each effect off one at a time on a frozen frame. The culprit is the
-      Tropos volumetric fog (`TroposCamera.renderFog`), which renders as a milky, glowing veil at night.
-      Reflections, bloom/post-processing, clouds and snow shading were not it. The rest is flat blue sky ambient.
-    - **Fix:** while always-night is on, the mod switches off the volumetric fog for a clear arctic night and keeps
-      the distance haze for depth. It also dims the sky ambient and haze, doubles the moonlight and gives the moon
-      soft shadows.
-    - This follows the usual "Hollywood darkness" practice (see the
-      [Level Design Book](https://book.leveldesignbook.com/process/lighting/darkness)): readable brightness, with
-      night carried by contrast, directional moonlight and shadows that reach real black instead of flat ambient.
-    - Turning night off restores everything, fog included.
+    the board. I tracked it down in two rounds of A/B on a frozen frame, switching one effect at a time.
+    1. **Tropos volumetric fog** (`TroposCamera.renderFog`). At night it renders as a milky, glowing veil, so the
+       mod switches it off for a clear arctic night. The distance haze stays, for depth.
+    2. **Sky reflections.** The reflection probes hold a bright night sky (Tropos sky exposure is 12), so every
+       glossy surface gets a pale sheen. The mod scales reflections to 35%.
+    3. **Auto exposure and bloom.** Auto exposure pushes the dark scene back towards mid-grey, and bloom then halos
+       the snow. Both are off at night.
+    4. **Flat lighting.** Sky ambient is dimmed to 20%. The moon is ×3 with soft shadows, so the slopes facing it
+       are lit and everything else falls into real shadow. The grade adds a bit more contrast and a little less
+       saturation, because night vision is less colourful.
+
+    This follows the usual "Hollywood darkness" practice (see the
+    [Level Design Book](https://book.leveldesignbook.com/process/lighting/darkness)): readable brightness, with
+    night carried by contrast, directional moonlight and shadows that reach real black instead of flat ambient.
+    Turning night off restores every original value, including the shared post-process profile.
   - The mod never forces anything every frame.
   - Levels that ship native time presets (`Lirp.Scene.TimePresets`) also get their own night preset loaded.
-- **Aurora.** Three procedurally generated curtain ribbons sit on a sky sphere centred on the camera, just inside
-  the far plane, so terrain still occludes them.
-  - Each ribbon is textured with a generated, tileable "rays" texture: green at the base, teal in the middle,
+- **Aurora.** Two curtain rings go all the way round the horizon, and a third arc passes high overhead, so there's
+  aurora whichever way you ride.
+  - Bright and faint patches drift slowly around the sky.
+  - It sits on a sky sphere centred on the camera, just inside the far plane, so terrain still occludes it.
+  - Each curtain is textured with a generated, tileable "rays" texture: green at the base, teal in the middle,
     violet at the top.
   - It's drawn with a transparent shader the game already ships (`Legacy Shaders/Particles/Additive`), so there's
     no AssetBundle and no Unity Editor dependency.
-  - The ribbons sway and shimmer through vertex updates written into persistent native arrays, so nothing is
+  - The curtains sway and shimmer through vertex updates written into persistent native arrays, so nothing is
     allocated per frame.
   - All of the art is generated at runtime by this mod. No game assets are copied or shipped.
 
@@ -60,13 +66,15 @@ Both settings persist between sessions.
 |---|---|---|
 | `NightEnabled` | `true` | Always night. |
 | `NightSunAltitude` | `-12` | How far below the horizon the sun is held: `-1` is dusk, `-18` is the darkest night. |
-| `NightAmbient` | `0.3` | Multiplier on sky ambient on surfaces at night. `1` is the game's stock look, which is flat and glowy. |
-| `NightHaze` | `0.3` | Multiplier on how much sky light the fog and haze scatter at night. `1` is the stock blue glow. |
-| `MoonBrightness` | `2` | Multiplier on the moonlight. The moon also casts soft shadows while night is forced. |
+| `NightAmbient` | `0.2` | Multiplier on sky ambient on surfaces at night. `1` is the game's stock look, which is flat and glowy. |
+| `NightHaze` | `0.3` | Multiplier on how much sky light the haze scatters at night. `1` is the stock blue glow. |
+| `MoonBrightness` | `3` | Multiplier on the moonlight. The moon also casts soft shadows while night is forced. |
 | `NightFog` | `false` | Keep the game's volumetric fog at night. At night it renders as a milky glowing veil. |
+| `NightReflections` | `0.35` | Multiplier on sky reflections at night. `1` brings back the pale sheen on snow, rails and boards. |
+| `NightGrade` | `true` | At night: auto exposure off, bloom off, contrast +15, saturation −15. |
 | `AuroraEnabled` | `true` | Draw the aurora. |
 | `AuroraIntensity` | `1.0` | `0`–`3`. |
-| `AuroraAzimuth` | `0` | World heading of the aurora's centre, in degrees. |
+| `AuroraAzimuth` | `0` | Rotates the aurora pattern, in degrees. |
 | `NightToggleKey` / `AuroraToggleKey` | `F7` / `F8` | Any `UnityEngine.KeyCode` name. |
 | `VerboseLogging` | `false` | Log every sun/time call the game makes, to `MelonLoader\Latest.log`. |
 
@@ -92,6 +100,9 @@ of competitive or ranked play.
   `EnvironmentManager` sun calls (`Apply` with per-zone `EnvironmentSetting`s, `timeType` Custom).
 - Don't Harmony-patch `Lirp.Scene.SetWeather(int, int)`. In this build IL2CPP folded its native body with hot,
   unrelated methods, and the detour fires thousands of times a second with garbage arguments.
+- Post-processing parameters (`ParameterOverride<T>.value`) read as garbage (every value reads `37.0683`) through
+  the Il2CppInterop accessors. `src/Il2CppParam.cs` reads and writes the field through the object's real IL2CPP
+  class instead.
 
 ## Credits
 - Built by estr3llas with an AI coding agent, using the

@@ -7,10 +7,10 @@ namespace ShreddersNightAurora
     /// <summary>
     /// The game's stock night (sun below the horizon) is lit almost entirely by flat blue sky ambient, and the
     /// Tropos volumetric fog lays a milky, glowing veil over everything, near objects included (the "foam" on snow,
-    /// rails and board). Found by A/B on a frozen frame: turning TroposCamera.renderFog off removes the veil, while
-    /// clouds, reflections, post-processing and snow shading were not the cause. While always-night is on this
-    /// turns the volumetric fog off (clear arctic night; distance haze/aerial perspective stays), dims the surface
-    /// ambient and haze, brightens the moon and gives it soft shadows. Originals are restored on toggle-off.
+    /// rails and board). Found by A/B on a frozen frame: turning TroposCamera.renderFog off removes the veil.
+    /// While always-night is on this turns the volumetric fog off (clear arctic night; distance haze/aerial
+    /// perspective stays), dims the surface ambient and haze, brightens the moon and gives it soft shadows, and
+    /// applies <see cref="NightGrade"/> (reflections, exposure, bloom, grade). Originals are restored on toggle-off.
     /// </summary>
     internal static class NightLook
     {
@@ -46,6 +46,7 @@ namespace ShreddersNightAurora
             Set(tropos, env, troposAmbient * AmbientScale, envAmbient * AmbientScale, fogAmbient * HazeScale,
                 hazeColor * HazeScale, moonIntensity * MoonScale, LightShadows.Soft);
             SetFog(Mod.NightFog.Value);
+            NightGrade.Apply();
             active = true;
         }
 
@@ -54,6 +55,7 @@ namespace ShreddersNightAurora
             if (!active) return;
             active = false;
             RestoreFog();
+            NightGrade.Restore();
             var env = Lirp.EnvironmentManager.instance;
             var tropos = TroposEnvironment.instance;
             if (env == null || env != cachedFor || env.lighting == null || tropos == null || tropos.m_Lighting == null) return;

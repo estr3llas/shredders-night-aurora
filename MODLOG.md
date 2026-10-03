@@ -68,3 +68,17 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
   - Verified: crisp moonlit mountains, F7 brings day back with its fog, F7 again gives night, F8 works.
 - Research: Level Design Book, "Lighting for darkness" (Hollywood darkness: contrast and directional moonlight
   rather than flat ambient), and Jensen et al., "Night Rendering" (2000).
+- 18:36 User: "still glowy as hell", and the aurora only shows on one side.
+  - Aurora: rebuilt as two 360-degree rings (every term periodic in x, integer URepeat, no seam) plus an overhead
+    arc, with drifting activity patches. Captures from several headings show aurora in all of them.
+  - Post FX dump. The global volume 'POSTPROCESS' uses profile 'Post-process Volume Profile_Shredders' with
+    AmbientOcclusion, AutoExposure (min -1.52, max -0.67, key 0.63), Bloom (intensity 1, threshold 2) and
+    ColorGrading (ACES, postExp -2.19, contrast 26). The interop generic `ParameterOverride<T>.value` returns
+    37.0683 for everything, so it reads the field via il2cpp_class_get_field_from_name + offset.
+  - A/B round 3 on a frozen frame. Reflections at 0.3 removed the pale sheen, which is the real "foam" left after
+    the fog fix. Auto exposure off gives a darker, natural image. Bloom off is a minor win. Moon x3 gives
+    directional shading. Snow subsurface and SnowPostFX made no difference.
+  - Fix (NightGrade): reflections x0.35 (RenderSettings plus every ReflectionProbe), AE and bloom inactive,
+    contrast +15, saturation -15, ambient 0.2, moon x3. All restored on toggle-off, and the profile originals are
+    kept across levels because it's a shared asset.
+  - Verified: contrasty moonlit night with no sheen; F7 brings back the full day look; F7 again gives night; F8 OK.
