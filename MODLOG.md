@@ -82,3 +82,12 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
     contrast +15, saturation -15, ambient 0.2, moon x3. All restored on toggle-off, and the profile originals are
     kept across levels because it's a shared asset.
   - Verified: contrasty moonlit night with no sheen; F7 brings back the full day look; F7 again gives night; F8 OK.
+- 18:55 User: the glow is gone, but it's way too dark and pitch black in places.
+  - A/B at two spots. In the moon-shadow spot, ambient .5 + shadowStrength .7 + postExposure +.4 made it readable
+    without glow. Turning AE back on brightened the lit areas but left the shadows black.
+  - The worst dark spots are whole slopes in shadow from the game's low moon (rotation x=20.39°, y=95.2°).
+  - Ride luminance (6 frames each, 8-bit mean): stock moon about 27-32; MoonElevation 45 about 37-48, with no
+    sheen.
+  - Defaults now: NightBrightness +0.4 EV (ColorGrading.postExposure offset), NightAmbient 0.5,
+    MoonShadowStrength 0.6, MoonElevation 45 (keeps the heading). All cached and restored on toggle-off.
+    Toggling F7 off and on three times gives identical frame luminance (29.4 / 29.3 / 29.4).

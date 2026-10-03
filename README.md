@@ -26,14 +26,23 @@ Both settings persist between sessions.
        glossy surface gets a pale sheen. The mod scales reflections to 35%.
     3. **Auto exposure and bloom.** Auto exposure pushes the dark scene back towards mid-grey, and bloom then halos
        the snow. Both are off at night.
-    4. **Flat lighting.** Sky ambient is dimmed to 20%. The moon is ×3 with soft shadows, so the slopes facing it
-       are lit and everything else falls into real shadow. The grade adds a bit more contrast and a little less
-       saturation, because night vision is less colourful.
+    4. **Flat lighting.** The moon is ×3 with soft shadows, so slopes facing it are lit and others are shaded.
+       The grade adds a bit more contrast and a little less saturation, because night vision is less colourful.
+
+    Removing the glow made some places pitch black, so brightness is put back only through sources that don't
+    glow:
+    - the moon is raised from the game's 20° to 45°, so whole slopes no longer sit in its long shadows;
+    - moon shadows are kept at 60% strength;
+    - sky fill light is at 50%;
+    - post-exposure is +0.4 EV.
+
+    In a measured ride, frame brightness went from about 28 to about 43 (out of 255), with no sheen coming back.
 
     This follows the usual "Hollywood darkness" practice (see the
-    [Level Design Book](https://book.leveldesignbook.com/process/lighting/darkness)): readable brightness, with
-    night carried by contrast, directional moonlight and shadows that reach real black instead of flat ambient.
-    Turning night off restores every original value, including the shared post-process profile.
+    [Level Design Book](https://book.leveldesignbook.com/process/lighting/darkness)): make it feel dark without
+    making it unreadable. Night is carried by contrast and directional moonlight.
+    Turning night off restores every original value, including the shared post-process profile and the moon's
+    direction.
   - The mod never forces anything every frame.
   - Levels that ship native time presets (`Lirp.Scene.TimePresets`) also get their own night preset loaded.
 - **Aurora.** Two curtain rings go all the way round the horizon, and a third arc passes high overhead, so there's
@@ -66,9 +75,12 @@ Both settings persist between sessions.
 |---|---|---|
 | `NightEnabled` | `true` | Always night. |
 | `NightSunAltitude` | `-12` | How far below the horizon the sun is held: `-1` is dusk, `-18` is the darkest night. |
-| `NightAmbient` | `0.2` | Multiplier on sky ambient on surfaces at night. `1` is the game's stock look, which is flat and glowy. |
+| `NightBrightness` | `0.4` | Overall night exposure in EV stops. Raise it to brighten; it doesn't bring the glow back. |
+| `NightAmbient` | `0.5` | Multiplier on the sky fill light. It keeps areas out of the moonlight from going pitch black. `1` is the stock look, which is flat and glowy. |
 | `NightHaze` | `0.3` | Multiplier on how much sky light the haze scatters at night. `1` is the stock blue glow. |
 | `MoonBrightness` | `3` | Multiplier on the moonlight. The moon also casts soft shadows while night is forced. |
+| `MoonShadowStrength` | `0.6` | How dark moon shadows are. `1` is fully black. |
+| `MoonElevation` | `45` | Moon height in degrees, keeping the game's compass heading. `0` keeps the game's own moon at about 20°. |
 | `NightFog` | `false` | Keep the game's volumetric fog at night. At night it renders as a milky glowing veil. |
 | `NightReflections` | `0.35` | Multiplier on sky reflections at night. `1` brings back the pale sheen on snow, rails and boards. |
 | `NightGrade` | `true` | At night: auto exposure off, bloom off, contrast +15, saturation −15. |

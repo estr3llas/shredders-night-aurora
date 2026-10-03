@@ -15,8 +15,9 @@ namespace ShreddersNightAurora
     internal static class NightLook
     {
         static Lirp.EnvironmentManager cachedFor;
-        static float troposAmbient, envAmbient, moonIntensity, fogAmbient, hazeColor;
+        static float troposAmbient, envAmbient, moonIntensity, moonShadowStrength, fogAmbient, hazeColor;
         static LightShadows moonShadows;
+        static Quaternion moonRotation;
         static bool active;
         static TroposCamera fogCamera;    // camera whose renderFog we switched off
         static bool fogCameraOriginal;
@@ -38,13 +39,20 @@ namespace ShreddersNightAurora
                 troposAmbient = tropos.m_Lighting.ambientIntensity;
                 envAmbient = env.lighting.ambientIntensity;
                 var moon = tropos.moon;
-                if (moon != null) { moonIntensity = moon.intensity; moonShadows = moon.shadows; }
+                if (moon != null)
+                {
+                    moonIntensity = moon.intensity; moonShadows = moon.shadows; moonShadowStrength = moon.shadowStrength;
+                    moonRotation = moon.transform.rotation;
+                }
                 if (tropos.fogConfig != null) fogAmbient = tropos.fogConfig.ambientScattering;
                 if (tropos.haze != null) hazeColor = tropos.haze.color;
             }
 
+            // Shadow strength < 1 keeps moon-shadowed slopes readable instead of pitch black.
             Set(tropos, env, troposAmbient * AmbientScale, envAmbient * AmbientScale, fogAmbient * HazeScale,
-                hazeColor * HazeScale, moonIntensity * MoonScale, LightShadows.Soft);
+                hazeColor * HazeScale, moonIntensity * MoonScale, LightShadows.Soft,
+                Mathf.Clamp01(Mod.MoonShadowStrength.Value));
+            SetMoonElevation(tropos.moon, Mod.MoonElevation.Value);
             SetFog(Mod.NightFog.Value);
             NightGrade.Apply();
             active = true;
@@ -59,7 +67,19 @@ namespace ShreddersNightAurora
             var env = Lirp.EnvironmentManager.instance;
             var tropos = TroposEnvironment.instance;
             if (env == null || env != cachedFor || env.lighting == null || tropos == null || tropos.m_Lighting == null) return;
-            Set(tropos, env, troposAmbient, envAmbient, fogAmbient, hazeColor, moonIntensity, moonShadows);
+            Set(tropos, env, troposAmbient, envAmbient, fogAmbient, hazeColor, moonIntensity, moonShadows, moonShadowStrength);
+            if (tropos.moon != null) tropos.moon.transform.rotation = moonRotation;
+        }
+
+        /// <summary>The stock moon hangs 20° above the horizon, so whole slopes facing away from it sit in long
+        /// shadows. A higher moon (same compass heading) lights the mountain more evenly. 0 = keep the game's.</summary>
+        static void SetMoonElevation(Light moon, float elevation)
+        {
+            if (moon == null) return;
+            Quaternion want = elevation > 0f
+                ? Quaternion.Euler(Mathf.Clamp(elevation, 1f, 89f), moonRotation.eulerAngles.y, 0f)
+                : moonRotation;
+            if (Quaternion.Angle(moon.transform.rotation, want) > 0.01f) moon.transform.rotation = want;
         }
 
         static void SetFog(bool on)
@@ -84,7 +104,7 @@ namespace ShreddersNightAurora
         }
 
         static void Set(TroposEnvironment tropos, Lirp.EnvironmentManager env, float tAmbient, float eAmbient,
-            float fAmbient, float hColor, float mIntensity, LightShadows shadows)
+            float fAmbient, float hColor, float mIntensity, LightShadows shadows, float shadowStrength)
         {
             if (!Mathf.Approximately(tropos.m_Lighting.ambientIntensity, tAmbient)) tropos.m_Lighting.ambientIntensity = tAmbient;
             if (!Mathf.Approximately(env.lighting.ambientIntensity, eAmbient))
@@ -109,6 +129,7 @@ namespace ShreddersNightAurora
             {
                 if (!Mathf.Approximately(moon.intensity, mIntensity)) moon.intensity = mIntensity;
                 if (moon.shadows != shadows) moon.shadows = shadows;
+                if (!Mathf.Approximately(moon.shadowStrength, shadowStrength)) moon.shadowStrength = shadowStrength;
             }
         }
     }

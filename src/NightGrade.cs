@@ -19,8 +19,8 @@ namespace ShreddersNightAurora
 
         static PostProcessProfile profile;
         static bool bloomWas, exposureWas;
-        static float contrastWas, saturationWas;
-        static bool contrastOverrideWas, saturationOverrideWas;
+        static float contrastWas, saturationWas, exposureOffsetWas;
+        static bool contrastOverrideWas, saturationOverrideWas, exposureOffsetOverrideWas;
 
         static float reflectionWas = -1f;
         static readonly List<(ReflectionProbe probe, float intensity)> probes = new List<(ReflectionProbe, float)>();
@@ -89,6 +89,8 @@ namespace ShreddersNightAurora
                     Il2CppParam.TryGetBool(c.contrast, "overrideState", out contrastOverrideWas);
                     Il2CppParam.TryGetFloat(c.saturation, "value", out saturationWas);
                     Il2CppParam.TryGetBool(c.saturation, "overrideState", out saturationOverrideWas);
+                    Il2CppParam.TryGetFloat(c.postExposure, "value", out exposureOffsetWas);
+                    Il2CppParam.TryGetBool(c.postExposure, "overrideState", out exposureOffsetOverrideWas);
                 }
             }
             var bloom = Get<Bloom>(profile); if (bloom != null && bloom.active) bloom.active = false;
@@ -98,6 +100,9 @@ namespace ShreddersNightAurora
             {
                 SetParam(cg.contrast, Mathf.Clamp(contrastWas + ContrastAdd, -100f, 100f));
                 SetParam(cg.saturation, Mathf.Clamp(saturationWas + SaturationAdd, -100f, 100f));
+                // With auto exposure off, this is the night's overall brightness (EV). Raising it does not bring the
+                // glow back: that came from reflections, fog and bloom, which stay down.
+                SetParam(cg.postExposure, exposureOffsetWas + Mathf.Clamp(Mod.NightBrightness.Value, -3f, 3f));
             }
         }
 
@@ -113,6 +118,8 @@ namespace ShreddersNightAurora
                 Il2CppParam.TrySetBool(c.contrast, "overrideState", contrastOverrideWas);
                 Il2CppParam.TrySetFloat(c.saturation, "value", saturationWas);
                 Il2CppParam.TrySetBool(c.saturation, "overrideState", saturationOverrideWas);
+                Il2CppParam.TrySetFloat(c.postExposure, "value", exposureOffsetWas);
+                Il2CppParam.TrySetBool(c.postExposure, "overrideState", exposureOffsetOverrideWas);
             }
             profile = null;
         }
