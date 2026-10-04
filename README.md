@@ -67,8 +67,24 @@ Both settings persist between sessions.
     - It's drawn with a transparent shader the game already ships (`Legacy Shaders/Particles/Additive`), so there's
       no AssetBundle and no Unity Editor dependency.
     - The textures (1024×512 curtain, soft glow) are generated at startup.
-    - Vertices are rewritten each frame into persistent native arrays, so nothing is allocated per frame.
+    - Vertices go into persistent native arrays, so nothing is allocated per frame.
   - All of the art is generated at runtime by this mod. No game assets are copied or shipped.
+
+## Performance
+- **Aurora, each frame:** the sky follows the camera and the rays scroll. Only one of the three curtains (with
+  its glow) has its shape recomputed per frame, at most 60 times a second per curtain. All its waves come from
+  sine/cosine tables built once, with the time part evaluated once per curtain, and each curtain and its glow
+  share one path calculation.
+  - In an off-game benchmark of the same math, a frame went from 0.37 ms to about 0.035 ms (×10).
+  - The new shapes match the old to within 6·10⁻⁵ of the sky-sphere radius, with brightness off by at most
+    1/255.
+- **Aurora, setup:** textures and meshes are built during level load, so there's no stutter when it first fades
+  in.
+- **Night, once a second:** a maintenance pass re-checks the lighting values and writes only the ones that
+  changed. Scene-wide searches run only after a scene load, with at most 10 retries. Post-process effect objects,
+  field offsets and the camera's Tropos component are cached.
+- **Measuring it:** with `VerboseLogging = true`, the mod logs the aurora's average and maximum per-frame cost
+  every 600 frames to `MelonLoader\Latest.log`.
 
 ## Install
 1. Install **MelonLoader v0.7.3** into the Shredders folder.
