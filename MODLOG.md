@@ -126,3 +126,4 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
   - NightLook: GetComponent<TroposCamera> only when Camera.main changes.
   - Not done: merging the 6 draw calls into fewer. The curtains scroll at different speeds (one material each),
     and order-independence only holds for the additive shader, not the Sprites/Default fallback.
+- User confirmed the optimized build works in game (commit eeec784 deployed). Released as v0.6.0.
