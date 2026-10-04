@@ -20,6 +20,7 @@ namespace ShreddersNightAurora
         static Quaternion moonRotation;
         static bool active;
         static TroposCamera fogCamera;    // camera whose renderFog we switched off
+        static Camera fogCameraOwner;     // the Camera it belongs to: GetComponent only when Camera.main changes
         static bool fogCameraOriginal;
 
         static float AmbientScale => Mathf.Clamp(Mod.NightAmbient.Value, 0f, 1f);
@@ -85,12 +86,15 @@ namespace ShreddersNightAurora
         static void SetFog(bool on)
         {
             var cam = Camera.main;
-            var tc = cam != null ? cam.GetComponent<TroposCamera>() : null;
-            if (tc == null) return;
-            if (tc != fogCamera)
+            if (cam == null) return;
+            var tc = fogCamera;
+            if (cam != fogCameraOwner || tc == null)
             {
+                tc = cam.GetComponent<TroposCamera>();
+                if (tc == null) return;
                 RestoreFog();
                 fogCamera = tc;
+                fogCameraOwner = cam;
                 fogCameraOriginal = tc.renderFog;
             }
             bool want = on && fogCameraOriginal;
@@ -101,6 +105,7 @@ namespace ShreddersNightAurora
         {
             if (fogCamera != null && fogCamera.renderFog != fogCameraOriginal) fogCamera.renderFog = fogCameraOriginal;
             fogCamera = null;
+            fogCameraOwner = null;
         }
 
         static void Set(TroposEnvironment tropos, Lirp.EnvironmentManager env, float tAmbient, float eAmbient,

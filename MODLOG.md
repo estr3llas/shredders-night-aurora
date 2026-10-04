@@ -111,3 +111,18 @@ game's own `Legacy Shaders/Particles/Additive` shader (found in resources.assets
   - Verified at spawn: tall green rays, purple fringe and red tops are visible across headings, and the animation
     runs.
   - A recorded clip was unusable because the rider drifted into a building; it was discarded.
+- 20:10 Optimization pass from a static review. The game wasn't run; the user will check later.
+  - Aurora: sin/cos tables per harmonic plus angle addition; one path evaluation shared by each curtain and its
+    glow (lean and the glow's -2° offset applied by angle addition); x^8 by squaring; one curtain re-meshed per
+    frame round-robin (at most 60 Hz each); per-frame texture scroll kept; NightFactor at 4 Hz; root and camera
+    transforms cached; textures, meshes and materials built in OnSceneWasInitialized (Prewarm) rather than on
+    first fade-in; curtain anisoLevel 8 -> 2, glow 1. Verbose mode logs avg/max LateUpdate cost every 600 frames.
+  - Off-game .NET benchmark of the same math: all 3 curtains+glows 0.374 -> 0.105 ms; with round-robin about
+    0.035 ms/frame. Equivalence over t in {0, 1.7, 37, 600, 3600, 86400}: max vertex diff 6.4e-5 (unit sphere),
+    max alpha diff 1/255.
+  - NightGrade: FindObjectsOfType<PostProcessVolume> only after a scene load or a restore (10 attempts max).
+    Bloom/AutoExposure/ColorGrading objects cached with the profile.
+  - Il2CppParam: field offsets cached per (class, name). Removed the unused TryGetInt.
+  - NightLook: GetComponent<TroposCamera> only when Camera.main changes.
+  - Not done: merging the 6 draw calls into fewer. The curtains scroll at different speeds (one material each),
+    and order-independence only holds for the additive shader, not the Sprites/Default fallback.

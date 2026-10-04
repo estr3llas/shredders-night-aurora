@@ -83,6 +83,8 @@ namespace ShreddersNightAurora
         {
             if (Verbose.Value) Log.Msg($"Scene initialized: {buildIndex} '{sceneName}'");
             Night.OnSceneInitialized();
+            // Build the aurora (textures, meshes) behind the load screen rather than when it first fades in.
+            if (AuroraEnabled.Value) aurora.Prewarm();
         }
 
         public override void OnUpdate()

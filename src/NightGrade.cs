@@ -10,22 +10,35 @@ namespace ShreddersNightAurora
     ///    is 12), so every glossy surface (snow, rails, board) gets a pale sheen. Scaled by NightReflections.
     ///  - Auto exposure lifts the dark scene back towards mid-grey and bloom then halos the snow; both are
     ///    switched off at night so it can actually be dark.
-    ///  - A small grade: more contrast, less saturation (night vision is less colourful).
+    ///  - A small grade: more contrast, less saturation (night vision is less colourful), plus the
+    ///    NightBrightness exposure offset.
     /// The global post-process profile is a shared asset, so every original value is cached and put back.
+    ///
+    /// Runs once a second (Night's guard). Scene searches (FindObjectsOfType) happen only after a scene load; the
+    /// profile's effect objects and parameter field offsets are cached with the profile.
     /// </summary>
     internal static class NightGrade
     {
         const float ContrastAdd = 15f, SaturationAdd = -15f;
 
         static PostProcessProfile profile;
+        static Bloom bloom;
+        static AutoExposure autoExposure;
+        static ColorGrading grading;
         static bool bloomWas, exposureWas;
         static float contrastWas, saturationWas, exposureOffsetWas;
         static bool contrastOverrideWas, saturationOverrideWas, exposureOffsetOverrideWas;
+        // After a scene load the global volume may activate a little later, so allow a few once-a-second searches,
+        // then stop until the next load (FindObjectsOfType walks every object in the scene).
+        const int SearchAttempts = 10;
+        static int searchesLeft = SearchAttempts;
 
         static float reflectionWas = -1f;
         static readonly List<(ReflectionProbe probe, float intensity)> probes = new List<(ReflectionProbe, float)>();
 
         static float ReflectionScale => Mathf.Clamp(Mod.NightReflections.Value, 0f, 1f);
+
+        public static void OnSceneInitialized() => searchesLeft = SearchAttempts;
 
         public static void Apply()
         {
@@ -74,54 +87,62 @@ namespace ShreddersNightAurora
 
         static void ApplyPost()
         {
-            var current = profile != null ? profile : GlobalProfile();
-            if (current == null) return;
-            if (current != profile)
+            if (profile == null)
             {
-                RestorePost();
-                profile = current;
-                var b = Get<Bloom>(profile); var a = Get<AutoExposure>(profile); var c = Get<ColorGrading>(profile);
-                bloomWas = b != null && b.active;
-                exposureWas = a != null && a.active;
-                if (c != null)
-                {
-                    Il2CppParam.TryGetFloat(c.contrast, "value", out contrastWas);
-                    Il2CppParam.TryGetBool(c.contrast, "overrideState", out contrastOverrideWas);
-                    Il2CppParam.TryGetFloat(c.saturation, "value", out saturationWas);
-                    Il2CppParam.TryGetBool(c.saturation, "overrideState", out saturationOverrideWas);
-                    Il2CppParam.TryGetFloat(c.postExposure, "value", out exposureOffsetWas);
-                    Il2CppParam.TryGetBool(c.postExposure, "overrideState", out exposureOffsetOverrideWas);
-                }
+                if (searchesLeft <= 0) return;
+                searchesLeft--;
+                var found = GlobalProfile();
+                if (found == null) return;
+                Capture(found);
             }
-            var bloom = Get<Bloom>(profile); if (bloom != null && bloom.active) bloom.active = false;
-            var ae = Get<AutoExposure>(profile); if (ae != null && ae.active) ae.active = false;
-            var cg = Get<ColorGrading>(profile);
-            if (cg != null)
+            if (bloom != null && bloom.active) bloom.active = false;
+            if (autoExposure != null && autoExposure.active) autoExposure.active = false;
+            if (grading != null)
             {
-                SetParam(cg.contrast, Mathf.Clamp(contrastWas + ContrastAdd, -100f, 100f));
-                SetParam(cg.saturation, Mathf.Clamp(saturationWas + SaturationAdd, -100f, 100f));
+                SetParam(grading.contrast, Mathf.Clamp(contrastWas + ContrastAdd, -100f, 100f));
+                SetParam(grading.saturation, Mathf.Clamp(saturationWas + SaturationAdd, -100f, 100f));
                 // With auto exposure off, this is the night's overall brightness (EV). Raising it does not bring the
                 // glow back: that came from reflections, fog and bloom, which stay down.
-                SetParam(cg.postExposure, exposureOffsetWas + Mathf.Clamp(Mod.NightBrightness.Value, -3f, 3f));
+                SetParam(grading.postExposure, exposureOffsetWas + Mathf.Clamp(Mod.NightBrightness.Value, -3f, 3f));
             }
+        }
+
+        static void Capture(PostProcessProfile p)
+        {
+            profile = p;
+            bloom = Get<Bloom>(p);
+            autoExposure = Get<AutoExposure>(p);
+            grading = Get<ColorGrading>(p);
+            bloomWas = bloom != null && bloom.active;
+            exposureWas = autoExposure != null && autoExposure.active;
+            if (grading == null) return;
+            Il2CppParam.TryGetFloat(grading.contrast, "value", out contrastWas);
+            Il2CppParam.TryGetBool(grading.contrast, "overrideState", out contrastOverrideWas);
+            Il2CppParam.TryGetFloat(grading.saturation, "value", out saturationWas);
+            Il2CppParam.TryGetBool(grading.saturation, "overrideState", out saturationOverrideWas);
+            Il2CppParam.TryGetFloat(grading.postExposure, "value", out exposureOffsetWas);
+            Il2CppParam.TryGetBool(grading.postExposure, "overrideState", out exposureOffsetOverrideWas);
         }
 
         static void RestorePost()
         {
             if (profile == null) return;
-            var b = Get<Bloom>(profile); if (b != null) b.active = bloomWas;
-            var a = Get<AutoExposure>(profile); if (a != null) a.active = exposureWas;
-            var c = Get<ColorGrading>(profile);
-            if (c != null)
+            if (bloom != null) bloom.active = bloomWas;
+            if (autoExposure != null) autoExposure.active = exposureWas;
+            if (grading != null)
             {
-                Il2CppParam.TrySetFloat(c.contrast, "value", contrastWas);
-                Il2CppParam.TrySetBool(c.contrast, "overrideState", contrastOverrideWas);
-                Il2CppParam.TrySetFloat(c.saturation, "value", saturationWas);
-                Il2CppParam.TrySetBool(c.saturation, "overrideState", saturationOverrideWas);
-                Il2CppParam.TrySetFloat(c.postExposure, "value", exposureOffsetWas);
-                Il2CppParam.TrySetBool(c.postExposure, "overrideState", exposureOffsetOverrideWas);
+                Il2CppParam.TrySetFloat(grading.contrast, "value", contrastWas);
+                Il2CppParam.TrySetBool(grading.contrast, "overrideState", contrastOverrideWas);
+                Il2CppParam.TrySetFloat(grading.saturation, "value", saturationWas);
+                Il2CppParam.TrySetBool(grading.saturation, "overrideState", saturationOverrideWas);
+                Il2CppParam.TrySetFloat(grading.postExposure, "value", exposureOffsetWas);
+                Il2CppParam.TrySetBool(grading.postExposure, "overrideState", exposureOffsetOverrideWas);
             }
             profile = null;
+            bloom = null;
+            autoExposure = null;
+            grading = null;
+            searchesLeft = SearchAttempts;   // next Apply re-captures from the (now restored) profile
         }
 
         static void SetParam(ParameterOverride p, float value)

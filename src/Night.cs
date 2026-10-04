@@ -42,6 +42,7 @@ namespace ShreddersNightAurora
         public static void OnSceneInitialized()
         {
             // Additive level chunks load constantly; just make sure night is (re)asserted once things settle.
+            NightGrade.OnSceneInitialized();
             if (!Mod.NightEnabled.Value) return;
             pending = true;
             nextTry = 0f;
