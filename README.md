@@ -1,5 +1,7 @@
 # Shredders Night + Aurora
 
+## Made with Claude Opus 5.5
+
 A [MelonLoader](https://github.com/LavaGang/MelonLoader) mod for [Shredders](https://store.steampowered.com/app/1874170/Shredders/)
 that keeps the mountain at night, everywhere and all the time, and puts an animated aurora borealis in the sky.
 Both can be toggled in game.
